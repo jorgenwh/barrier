@@ -32,7 +32,7 @@ def prompt():
         return create_error_response_object("server received no parameters")
 
     params = data["parameters"]
-    logging.info("Received prompt request with parameters: " + str(params))
+    logging.info("\33[1;93mReceived\33[0m prompt request with parameters: \33[1m" + str(params) + "\33[0m")
 
     if "type" not in params:
         logging.error("server received no prompt type")
@@ -49,9 +49,9 @@ def prompt():
         return create_error_response_object(
                 "server received unknown prompt type: '" + prompt_type + "'")
 
-    logging.info("Returning response: " + str(response))
+    logging.info("\33[1;93mReturning\33[0m response: \33[1m" + str(response) + "\33[0m")
     return response
 
 
 if __name__ == "__main__":
-    app.run(host="192.168.0.87", port=5000, debug=True)
+    app.run(host="192.168.0.87", port=5000) #, debug=True)
