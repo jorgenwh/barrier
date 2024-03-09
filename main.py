@@ -3,78 +3,55 @@ from flask_cors import CORS
 import logging
 from datetime import datetime
 
-from barrier import OpenAiApiHandler, AnthropicApiHandler
-
+from barrier.api_handlers import ApiHandler
+from barrier.responses import create_success_response_object, create_error_response_object
 
 app = Flask(__name__)
 CORS(app)
 
-openai_api_handler = OpenAiApiHandler()
-anthropic_api_handler = AnthropicApiHandler()
+api_handler = ApiHandler()
 
 logging.basicConfig(
         filename="logs/" + str(datetime.now()) + "_session.log",
         level=logging.INFO,
         format="%(asctime)s - %(levelname)s - %(message)s",
 )
+logging.info("STARTING SERVER - " + str(datetime.now()))
+
 
 @app.route("/")
 def root():
-    return "Nothing here"
+    return None
 
-
-@app.route("/chat_prompt/", methods=["POST"])
-def chat_prompt():
+@app.route("/prompt/", methods=["POST"])
+def prompt():
     data = request.get_json()
 
-    model = data["model"]
-    messages = data["messages"]
+    if "parameters" not in data:
+        logging.error("server received no parameters")
+        return create_error_response_object("server received no parameters")
 
-    logging.info("\33[1m--- Received chat prompt with parameters ---\33[0m")
-    logging.info("model=" + str(model))
-    logging.info("messages=" + str(messages))
+    params = data["parameters"]
+    logging.info("Received prompt request with parameters: " + str(params))
 
-    if model in ["gpt-3.5-turbo", "gpt-4-turbo-preview"]:
-        completion = openai_api_handler.prompt_text_model(
-                model=model,
-                messages=messages
-        )
-    elif model in ["claude-3-opus-20240229"]:
-        completion = anthropic_api_handler.prompt_text_model(
-                model=model,
-                messages=messages
-        )
+    if "type" not in params:
+        logging.error("server received no prompt type")
+        return create_error_response_object("server received no prompt type")
+
+    prompt_type = params["type"]
+    
+    if prompt_type == "text-completion":
+        response = api_handler.prompt_text_completion_model(params)
+    elif prompt_type == "image-generation":
+        response = api_handler.prompt_image_generation_model(params)
     else:
-        return jsonify({"error": "Model not found"})
+        logging.error("server received unknown prompt type: '" + prompt_type + "'")
+        return create_error_response_object(
+                "server received unknown prompt type: '" + prompt_type + "'")
 
-    logging.info("completion=" + str(completion))
-    return jsonify({"response": str(completion)})
-
-@app.route("/image_prompt/", methods=["POST"])
-def image_prompt():
-    data = request.get_json()
-
-    model = data["model"]
-    prompt = data["prompt"]
-    parameters = data["parameters"]
-
-    logging.info("\33[1m--- Received image prompt with parameters ---\33[0m")
-    logging.info("model=" + str(model))
-    logging.info("parameters=" + str(parameters))
-    logging.info("prompt=" + str(prompt))
-
-    if model in ["dall-e-3"]:
-        response = openai_api_handler.prompt_image_model(
-                model=model,
-                prompt=prompt,
-                parameters=parameters,
-        )
-    else:
-        return jsonify({"error": "Model not found"})
-
-    logging.info("response=" + str(response))
-    return jsonify({"response": str(response)})
+    logging.info("Returning response: " + str(response))
+    return response
 
 
 if __name__ == "__main__":
-    app.run(host="192.168.0.87", port=5000)
+    app.run(host="192.168.0.87", port=5000, debug=True)
