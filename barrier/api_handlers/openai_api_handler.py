@@ -14,12 +14,12 @@ class OpenAiApiHandler():
         completion = response.choices[0].message.content
         return completion
 
-    def prompt_image_model(self, model, prompt, size, quality):
+    def prompt_image_model(self, model, prompt, parameters):
         response = self._client.images.generate(
                 model=model,
                 prompt=prompt,
-                size=size,
-                quality=quality,
+                size=parameters["size"],
+                quality=parameters["quality"],
                 n=1,
         )
         image_url = response.data[0].url

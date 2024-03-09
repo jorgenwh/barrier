@@ -18,19 +18,22 @@ def root():
 
 
 @app.route("/chat_prompt/", methods=["POST"])
-def prompt_chat():
+def chat_prompt():
     data = request.get_json()
+
     model = data["model"]
     messages = data["messages"]
 
+    print("--- Received chat prompt with parameters ---")
+    print("model=" + model)
+    print("messages=" + messages)
+
     if model in ["gpt-3.5-turbo", "gpt-4-turbo-preview"]:
-        print("prompting " + model)
         completion = openai_api_handler.prompt_text_model(
                 model=model,
                 messages=messages
         )
     elif model in ["claude-3-opus-20240229"]:
-        print("prompting " + model)
         completion = anthropic_api_handler.prompt_text_model(
                 model=model,
                 messages=messages
@@ -38,7 +41,31 @@ def prompt_chat():
     else:
         return jsonify({"error": "Model not found"})
 
-    print("completion: " + completion)
+    print("completion=" + completion)
+    return jsonify({"response": completion})
+
+@app.route("/image_prompt/", methods=["POST"])
+def image_prompt():
+    data = request.get_json()
+
+    model = data["model"]
+    prompt = data["prompt"]
+    parameters = data["parameters"]
+
+    print("--- Received image prompt with parameters ---")
+    print("model=" + model)
+    print("parameters=" + parameters)
+    print("prompt=" + prompt)
+
+    if model in ["dall-e-3"]:
+        completion = openai_api_handler.prompt_image_model(
+                model=model,
+                prompt=prompt,
+                parameters=parameters,
+        )
+    else:
+        return jsonify({"error": "Model not found"})
+
     return jsonify({"response": completion})
 
 
